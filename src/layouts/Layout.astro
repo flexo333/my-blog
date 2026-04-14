@@ -5,7 +5,7 @@ interface Props {
   image?: string;
 }
 
-const { title, description = 'AUTHOR_NAME — software, leadership, ideas.', image } = Astro.props;
+const { title, description = 'William Bright — software, leadership, ideas.', image } = Astro.props;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
@@ -37,7 +37,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <body>
     <header>
       <nav class="nav container">
-        <a href="/" class="nav-home">AUTHOR_NAME</a>
+        <a href="/" class="nav-home">William Bright</a>
         <div class="nav-links">
           <a href="/blog">Writing</a>
           <a href="/#projects">Projects</a>
@@ -52,7 +52,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
     <footer>
       <div class="container footer-inner">
-        <span>AUTHOR_NAME</span>
+        <span>William Bright</span>
       </div>
     </footer>
   </body>
