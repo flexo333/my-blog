@@ -1,0 +1,93 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/pulumi/**"
+      - "infra/pulumi-ingress/**"
+  pull_request:
+    paths:
+      - "infra/pulumi/**"
+      - "infra/pulumi-ingress/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+# Stack names below are set by /setup — search for PULUMI_ORG/GITHUB_OWNER to find them.
+
+jobs:
+  ingress:
+    name: Ingress ${{ github.event_name == 'pull_request' && 'Preview' || 'Up' }}
+    runs-on: ubuntu-latest
+    if: ${{ secrets.PULUMI_ACCESS_TOKEN != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pulumi/setup-pulumi@v2
+
+      - name: Get infra role ARN
+        id: roles
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: |
+          pulumi login
+          echo "INFRA_ROLE_ARN=$(pulumi stack output infra_role_arn -s flexo333/flexo333-ingress/prod)" >> $GITHUB_OUTPUT
+          echo "AWS_REGION=$(pulumi stack output aws_region -s flexo333/flexo333-ingress/prod)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.roles.outputs.INFRA_ROLE_ARN }}
+          aws-region: ${{ steps.roles.outputs.AWS_REGION }}
+
+      - name: Preview
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: make infra-ingress-preview
+
+      - name: Apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: make infra-ingress-up
+
+  site:
+    name: Site ${{ github.event_name == 'pull_request' && 'Preview' || 'Up' }}
+    needs: ingress
+    runs-on: ubuntu-latest
+    if: ${{ secrets.PULUMI_ACCESS_TOKEN != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pulumi/setup-pulumi@v2
+
+      - name: Get infra role ARN
+        id: roles
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: |
+          pulumi login
+          echo "INFRA_ROLE_ARN=$(pulumi stack output infra_role_arn -s flexo333/flexo333-ingress/prod)" >> $GITHUB_OUTPUT
+          echo "AWS_REGION=$(pulumi stack output aws_region -s flexo333/flexo333-ingress/prod)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.roles.outputs.INFRA_ROLE_ARN }}
+          aws-region: ${{ steps.roles.outputs.AWS_REGION }}
+
+      - name: Preview
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: make infra-preview
+
+      - name: Apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: make infra-up

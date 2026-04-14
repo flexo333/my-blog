@@ -1,0 +1,20 @@
+# Secrets — never commit
+.env
+
+# Astro build output
+dist/
+.astro/
+
+# Node
+node_modules/
+
+# Pulumi state (managed in Pulumi Cloud, not git)
+.pulumi/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp

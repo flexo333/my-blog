@@ -1,0 +1,5 @@
+# Copy to Pulumi.prod.yaml and fill in your values.
+# /setup does this automatically.
+config:
+  aws:region: us-east-1
+  GITHUB_OWNER-site:domainName: yourdomain.com

@@ -1,0 +1,314 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+const { title, description = 'AUTHOR_NAME — software, leadership, ideas.', image } = Astro.props;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    {image && <meta property="og:image" content={new URL(image, Astro.site)} />}
+
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <nav class="nav container">
+        <a href="/" class="nav-home">AUTHOR_NAME</a>
+        <div class="nav-links">
+          <a href="/blog">Writing</a>
+          <a href="/#projects">Projects</a>
+          <a href="/about">About</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer>
+      <div class="container footer-inner">
+        <span>AUTHOR_NAME</span>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  /* ── Tokens ──────────────────────────────────────────────────────────────── */
+  :root {
+    --bg:            #fefdf8;
+    --surface:       #f5f2eb;
+    --border:        #e0dbd0;
+    --border-light:  #ede9e0;
+    --text:          #1c1a16;
+    --muted:         #7a7468;
+    --link:          #4a7c5f;
+    --link-hover:    #2f5c42;
+    --red:           #c07878;
+
+    /* pastel palette */
+    --sage:          #4a7c5f;
+    --sage-light:    #8fba9f;
+    --sage-pale:     #eef5f1;
+    --rose:          #c07878;
+    --rose-pale:     #f9efef;
+    --lavender:      #8878b4;
+    --lavender-pale: #f0eef9;
+    --peach:         #c49060;
+    --peach-pale:    #fdf3ea;
+
+    --font-display:  'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-body:     'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-ui:       'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-mono:     'DM Mono', 'Fira Code', Consolas, monospace;
+
+    --max-w:         680px;
+    --max-w-wide:    860px;
+  }
+
+  /* ── Reset ───────────────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    font-family:  var(--font-body);
+    font-size:    17px;
+    background:   var(--bg);
+    color:        var(--text);
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-optical-sizing: auto;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.7;
+  }
+
+  main { flex: 1; }
+
+  a {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+  }
+  a:hover { color: var(--link-hover); }
+
+  img { max-width: 100%; height: auto; display: block; }
+
+  /* ── Layout ──────────────────────────────────────────────────────────────── */
+  .container {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  .container--wide {
+    max-width: var(--max-w-wide);
+  }
+
+  /* ── Nav ─────────────────────────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-home {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--sage);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .nav-home:hover { color: var(--link-hover); }
+
+  .nav-links {
+    display: flex;
+    gap: 1.75rem;
+    align-items: center;
+  }
+  .nav-links a {
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.1s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── Footer ──────────────────────────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border-light);
+    padding: 2rem 0;
+    margin-top: 6rem;
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-ui);
+    font-size: 0.825rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .footer-inner a { color: var(--muted); }
+  .footer-inner a:hover { color: var(--link); }
+  .footer-sep { opacity: 0.4; }
+
+  /* ── Section headings ────────────────────────────────────────────────────── */
+  .section-heading {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-bottom: 1.25rem;
+    opacity: 0.85;
+  }
+
+  /* ── Prose (blog posts) ──────────────────────────────────────────────────── */
+  .prose {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .prose > * + * { margin-top: 1.4rem; }
+
+  .prose h1 {
+    font-family: var(--font-display);
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-top: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose h2 {
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 2.5rem;
+  }
+  .prose h3 {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 2rem;
+  }
+
+  .prose p { margin-top: 1.3rem; }
+
+  .prose ul, .prose ol {
+    padding-left: 1.5rem;
+    margin-top: 1rem;
+  }
+  .prose li { margin-top: 0.35rem; }
+
+  .prose strong { font-weight: 600; }
+  .prose em { font-style: italic; }
+
+  .prose a {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .prose blockquote {
+    border-left: 3px solid var(--border);
+    margin-left: 0;
+    padding-left: 1.25rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  .prose pre {
+    background: #1c1a16;
+    color: #f0ebe4;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  .prose pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .prose hr {
+    border: none;
+    border-top: 1px solid var(--border-light);
+    margin: 2.5rem 0;
+  }
+
+  .prose img {
+    border-radius: 6px;
+    margin: 2rem auto;
+  }
+
+  /* ── Utilities ───────────────────────────────────────────────────────────── */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); border: 0;
+  }
+
+  @media (max-width: 600px) {
+    html { font-size: 17px; }
+    .nav-links { gap: 1rem; }
+  }
+</style>

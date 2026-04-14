@@ -1,0 +1,157 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+
+const posts = allPosts.sort((a, b) => {
+  const da = a.data.date?.getTime() ?? 0;
+  const db = b.data.date?.getTime() ?? 0;
+  return db - da;
+});
+
+function titleFromId(id: string) {
+  return id
+    .replace(/\.md$/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+---
+
+<Layout
+  title="Writing — AUTHOR_NAME"
+  description="Thoughts on software, leadership, and building things."
+>
+  <div class="container page">
+
+    <header class="page-header">
+      <h1 class="page-title">Writing</h1>
+      <p class="page-sub">
+        Things I've worked out by writing them down.
+      </p>
+    </header>
+
+    {posts.length === 0 ? (
+      <p class="empty">
+        Nothing published yet. Working on it.
+      </p>
+    ) : (
+      <ol class="post-list">
+        {posts.map(post => {
+          const title = post.data.title ?? titleFromId(post.id);
+          return (
+            <li class="post-row">
+              <div class="post-main">
+                <a href={`/blog/${post.id}`} class="post-title">{title}</a>
+                {post.data.description && (
+                  <p class="post-desc">{post.data.description}</p>
+                )}
+                {post.data.tags.length > 0 && (
+                  <span class="post-tags">{post.data.tags.join(' · ')}</span>
+                )}
+              </div>
+              {post.data.date && (
+                <time class="post-date" datetime={post.data.date.toISOString()}>
+                  {post.data.date.toLocaleDateString('en-AU', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                  })}
+                </time>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    )}
+
+  </div>
+</Layout>
+
+<style>
+  .page {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .page-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .page-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-sub {
+    font-size: 1rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .post-list {
+    list-style: none;
+  }
+
+  .post-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 1.4rem 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .post-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+  }
+
+  .post-title {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.35;
+  }
+  .post-title:hover { color: var(--link); text-decoration: underline; }
+
+  .post-desc {
+    font-size: 0.925rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .post-tags {
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  .post-date {
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 0.2rem;
+  }
+
+  @media (max-width: 580px) {
+    .post-row { flex-direction: column; gap: 0.5rem; }
+    .post-date { font-size: 0.75rem; }
+  }
+</style>

@@ -1,0 +1,3 @@
+name: flexo333-site
+runtime: python
+description: Blog site infrastructure — S3 + CloudFront + ACM + Route53

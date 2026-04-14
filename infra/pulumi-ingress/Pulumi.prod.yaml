@@ -1,0 +1,5 @@
+config:
+  aws:region: us-east-1
+  flexo333-ingress:domainName: willbright.link
+  flexo333-ingress:githubOwner: flexo333
+  flexo333-ingress:bucketPrefix: flexo333-

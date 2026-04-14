@@ -1,0 +1,76 @@
+---
+interface Props {
+  name: string;
+  url?: string;
+  isNew?: boolean;
+  Content: any;
+}
+
+const { name, url, isNew, Content } = Astro.props;
+---
+
+<li class="project-item">
+  <div class="project-name-row">
+    {url
+      ? <a href={url} target="_blank" rel="noopener noreferrer" class="project-name">{name}</a>
+      : <span class="project-name">{name}</span>
+    }
+    {isNew && <span class="new-badge">new</span>}
+  </div>
+  <div class="project-desc">
+    <Content />
+  </div>
+</li>
+
+<style>
+  .project-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .project-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.1rem;
+  }
+
+  .project-name {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+  }
+  a.project-name:hover { color: var(--link); text-decoration: underline; }
+
+  .new-badge {
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--rose);
+    background: var(--rose-pale);
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    padding: 0.1rem 0.35rem;
+    line-height: 1;
+  }
+
+  .project-desc {
+    font-size: 0.875rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* strip default margins from the generated <p> tag */
+  .project-desc :global(p) {
+    margin: 0;
+  }
+
+  .project-desc :global(a) {
+    color: var(--link);
+  }
+</style>

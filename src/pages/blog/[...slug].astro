@@ -1,0 +1,129 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map(post => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+function titleFromId(id: string) {
+  return id
+    .replace(/\.md$/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+const title   = post.data.title ?? titleFromId(post.id);
+const description = post.data.description ?? `${title} — AUTHOR_NAME`;
+---
+
+<Layout title={`${title} — AUTHOR_NAME`} description={description} image={post.data.image}>
+  <article class="container post">
+
+    <header class="post-header">
+      <a href="/blog" class="back">← Writing</a>
+
+      <h1 class="post-title">{title}</h1>
+
+      <div class="post-meta">
+        {post.data.date && (
+          <time datetime={post.data.date.toISOString()}>
+            {post.data.date.toLocaleDateString('en-AU', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            })}
+          </time>
+        )}
+        {post.data.tags.length > 0 && (
+          <>
+            <span class="meta-sep">·</span>
+            <span class="post-tags">{post.data.tags.join(', ')}</span>
+          </>
+        )}
+      </div>
+
+      {post.data.image && (
+        <img
+          src={post.data.image}
+          alt=""
+          role="presentation"
+          class="hero-image"
+        />
+      )}
+    </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <footer class="post-footer">
+      <a href="/blog" class="back">← All posts</a>
+    </footer>
+
+  </article>
+</Layout>
+
+<style>
+  .post {
+    padding-top: 3.5rem;
+    padding-bottom: 4rem;
+  }
+
+  .back {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 2rem;
+  }
+  .back:hover { color: var(--link); }
+
+  .post-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .post-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 5vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    margin-bottom: 1rem;
+  }
+
+  .post-meta {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .meta-sep { opacity: 0.5; }
+  .post-tags { font-style: italic; }
+
+  .hero-image {
+    margin-top: 1.75rem;
+    border-radius: 6px;
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+  }
+
+  .post-footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-light);
+  }
+</style>

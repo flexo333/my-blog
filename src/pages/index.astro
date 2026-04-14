@@ -1,0 +1,240 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { getCollection, render } from 'astro:content';
+
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+
+const allProjects = await getCollection('projects');
+const projects = await Promise.all(
+  allProjects
+    .sort((a, b) => a.data.order - b.data.order)
+    .map(async p => ({ ...p, ...(await render(p)) }))
+);
+
+const posts = allPosts.sort((a, b) => {
+  const da = a.data.date?.getTime() ?? 0;
+  const db = b.data.date?.getTime() ?? 0;
+  return db - da;
+});
+
+function titleFromId(id: string) {
+  return id
+    .replace(/\.md$/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+---
+
+<Layout title="AUTHOR_NAME">
+
+  <!-- ── Intro ──────────────────────────────────────────────────────────────── -->
+  <section class="intro">
+    <div class="container container--wide intro-inner">
+      <img src="/avatar.jpg" alt="AUTHOR_NAME" class="avatar" />
+      <div class="intro-text">
+        <h1 class="name">AUTHOR_NAME</h1>
+        <p class="bio">
+          Add your bio here. Tell people what you do, what you care about, where you're based.
+          Edit this in <code>src/pages/index.astro</code>.
+        </p>
+        <p class="bio-links">
+          <a href="/about">About</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Two-column main ────────────────────────────────────────────────────── -->
+  <div class="container container--wide main-grid">
+
+    <!-- Writing -->
+    <section class="col-writing">
+      <p class="section-heading">Writing</p>
+
+      {posts.length === 0 ? (
+        <p class="empty-state">
+          Nothing published yet.<br />
+          <span class="empty-sub">Run <code>make draft IDEA=my-first-post</code> to start writing.</span>
+        </p>
+      ) : (
+        <ol class="post-list">
+          {posts.map(post => {
+            const title = post.data.title ?? titleFromId(post.id);
+            return (
+              <li class="post-row">
+                <div class="post-main">
+                  <a href={`/blog/${post.id}`} class="post-title">{title}</a>
+                  {post.data.description && (
+                    <p class="post-desc">{post.data.description}</p>
+                  )}
+                </div>
+                {post.data.date && (
+                  <time class="post-date" datetime={post.data.date.toISOString()}>
+                    {post.data.date.toLocaleDateString('en-AU', {
+                      year: 'numeric', month: 'short'
+                    })}
+                  </time>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+
+    <!-- Projects -->
+    <section id="projects" class="col-projects">
+      <p class="section-heading">Projects</p>
+
+      {projects.length === 0 ? (
+        <p class="empty-state">
+          Add projects in the <code>projects/</code> directory.
+        </p>
+      ) : (
+        <ul class="project-list">
+          {projects.map(p => (
+            <ProjectCard
+              name={p.data.name}
+              url={p.data.url}
+              isNew={p.data.isNew}
+              Content={p.Content}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+
+  </div>
+
+</Layout>
+
+<style>
+  /* ── Intro ───────────────────────────────────────────────────────────────── */
+  .intro {
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--border-light);
+    background: linear-gradient(to bottom, var(--sage-pale), var(--bg));
+  }
+
+  .intro-inner {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center top;
+    flex-shrink: 0;
+    border: 3px solid var(--sage-light);
+  }
+
+  .name {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 0.6rem;
+  }
+
+  .bio {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--muted);
+    max-width: 500px;
+    margin-bottom: 0.6rem;
+  }
+
+  .bio-links {
+    font-family: var(--font-ui);
+    font-size: 0.875rem;
+    color: var(--muted);
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .bio-links a { color: var(--muted); text-decoration: none; }
+  .bio-links a:hover { color: var(--link); }
+
+  /* ── Two-column grid ─────────────────────────────────────────────────────── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 4rem;
+    padding-top: 3rem;
+    padding-bottom: 4rem;
+    align-items: start;
+  }
+
+  .empty-state {
+    font-size: 0.975rem;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.7;
+  }
+
+  .post-list { list-style: none; }
+
+  .post-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .post-row:first-child { border-top: 1px solid var(--border-light); }
+
+  .post-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+  }
+
+  .post-title {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.4;
+  }
+  .post-title:hover { color: var(--link); }
+
+  .post-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .post-date {
+    font-family: var(--font-ui);
+    font-size: 0.775rem;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .col-projects {
+    border-left: 1px solid var(--border-light);
+    padding-left: 3rem;
+  }
+
+  .project-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 680px) {
+    .intro-inner { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+    .main-grid { grid-template-columns: 1fr; gap: 3rem 0; }
+    .col-projects { border-left: none; padding-left: 0; border-top: 1px solid var(--border-light); padding-top: 2.5rem; }
+  }
+</style>

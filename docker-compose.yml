@@ -1,0 +1,93 @@
+# Three Musketeers — every command runs in a container.
+# Local: copy .env.example → .env and fill in values.
+# CI:    inject secrets as environment variables.
+
+services:
+
+  # ── Astro dev server (make dev) ─────────────────────────────────────────────
+  node-dev:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    ports:
+      - "4321:4321"
+    environment:
+      NODE_ENV: development
+    command: npm run dev -- --host 0.0.0.0
+
+  # ── One-off node commands (make build / make install / make publish) ─────────
+  node:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      NODE_ENV: production
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+  # ── Pulumi — ingress (make infra-ingress-*) ───────────────────────────────
+  pulumi-ingress:
+    build: ./infra/pulumi-ingress
+    working_dir: /infra
+    volumes:
+      - ./infra/pulumi-ingress:/infra
+      - pulumi_plugins:/root/.pulumi/plugins
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      PULUMI_ACCESS_TOKEN: ${PULUMI_ACCESS_TOKEN:-}
+      PULUMI_STACK: ${PULUMI_STACK:-prod}
+
+  # ── Pulumi — site (make infra-preview / infra-up / infra-destroy) ───────────
+  pulumi:
+    build: ./infra/pulumi
+    working_dir: /infra
+    volumes:
+      - ./infra/pulumi:/infra
+      - pulumi_plugins:/root/.pulumi/plugins
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      PULUMI_ACCESS_TOKEN: ${PULUMI_ACCESS_TOKEN:-}
+      PULUMI_STACK: ${PULUMI_STACK:-prod}
+
+  # ── AWS CLI — deploy: s3 sync + CloudFront invalidation (make deploy) ────────
+  awscli:
+    image: amazon/aws-cli:2.17.0
+    volumes:
+      - .:/app
+    working_dir: /app
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-}
+
+  # ── GitHub CLI — fallback if gh not installed on host (make gh ARGS='...') ───
+  gh:
+    image: ghcr.io/cli/cli:latest
+    volumes:
+      - .:/workspace
+      - gh_config:/root/.config/gh
+    working_dir: /workspace
+    environment:
+      GH_TOKEN: ${GH_TOKEN:-}
+
+volumes:
+  node_modules:
+  pulumi_plugins:
+  gh_config:
