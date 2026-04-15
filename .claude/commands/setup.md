@@ -490,15 +490,15 @@ One sentence description.
 
 ---
 
-## Step 12 — First deploy and verification
+## Step 12 — Verify CI is deploying
 
-```bash
-make deploy
+The `git push` in Step 10 already triggered GitHub Actions. Show them where to watch:
+
+```
+CI is running: https://github.com/<GITHUB_OWNER>/<REPO_NAME>/actions
 ```
 
-This builds the Astro site and syncs to S3.
-
-Then tell them:
+Wait for the "Deploy Site" workflow to go green. Then tell them:
 
 ```
 Your blog is deployed! Here's what to check:
@@ -526,10 +526,9 @@ Summarise what was built, then show the ongoing workflow:
 ✅  Your blog is live at https://<DOMAIN>
 
 Day-to-day blogging:
-  make draft IDEA=<your-idea>    — start a new post
-  make publish POST=<slug>       — mark it ready
-  make deploy                    — push to S3
-  git push                       — CI deploys automatically
+  /draft IDEA=<your-idea>        — start a new post
+  /publish POST=<slug>           — mark it ready
+  git push                       — CI deploys automatically (preferred)
 
 To add a new app at <subdomain>.<DOMAIN>:
   /new-spa

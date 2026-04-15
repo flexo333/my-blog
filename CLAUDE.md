@@ -25,7 +25,7 @@ If `.env` exists, the user is working on their blog. Show them what they can do:
 /publish POST=<slug>   — mark a post ready to publish
 /teardown              — destroy all AWS infrastructure
 make dev               — local dev server → http://localhost:4321
-make deploy            — build + push to S3 + invalidate CloudFront
+git push               — deploy via GitHub Actions (preferred over make deploy)
 ```
 
 ---
@@ -110,7 +110,7 @@ ideas/my-idea           ← stub or note
 posts/my-idea.md        ← write here (draft: true)
   ↓  make publish POST=my-idea
 posts/my-idea.md        ← draft: false, date set
-  ↓  make deploy (or push to main — CI deploys automatically)
+  ↓  git commit + git push (triggers GitHub Actions — preferred over make deploy)
 yourdomain.com/blog/my-idea  ← live
 ```
 

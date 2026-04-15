@@ -14,11 +14,13 @@ make publish POST=$ARGUMENTS
 After publishing:
 1. Show the updated frontmatter
 2. Remind them to check `title:` and `description:` are set (the script adds placeholders)
-3. Ask: "Ready to deploy? Run `make deploy` or `git push` to trigger CI."
+3. Ask: "Ready to deploy? I can commit and push to trigger CI."
 
-If they say deploy now:
+If they say yes, commit the post file and push to main:
 ```bash
-make deploy
+git add posts/<slug>.md
+git commit -m "Publish: <title>"
+git push
 ```
 
 Show the live URL when done: `https://<their-domain>/blog/<slug>`

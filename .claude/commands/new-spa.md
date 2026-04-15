@@ -387,13 +387,16 @@ git push -u origin main
 
 ---
 
-## Step 10 — First deploy and verification
+## Step 10 — Verify CI is deploying
 
-```bash
-make deploy
+The `git push` in Step 9 already triggered GitHub Actions. Show them where to watch:
+
+```
+CI is running: https://github.com/<GITHUB_OWNER>/<SPA_REPO>/actions
 ```
 
-Show them:
+Wait for the "Deploy Site" workflow to go green. Then show them:
+
 ```
 ✅  <APP_NAME> is live!
 
@@ -404,8 +407,7 @@ DNS should propagate within a few minutes since Route53
 already controls your zone.
 
 To update the app:
-  edit index.html → git push → CI deploys automatically
-  or: make deploy  (deploys immediately from local)
+  edit index.html → git commit → git push → CI deploys automatically
 
 To destroy this app's infra:
   make infra-destroy  (run from ../<APP_NAME>/)
