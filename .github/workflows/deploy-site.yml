@@ -6,6 +6,7 @@ on:
     paths:
       - "src/**"
       - "posts/**"
+      - "projects/**"
       - "public/**"
       - "package.json"
       - "astro.config.mjs"
