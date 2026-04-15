@@ -75,9 +75,15 @@ Apply only what was agreed. In order:
 
 ---
 
-## Step 5 — Show the diff
+## Step 5 — Show the diff and commit
 
 Show what changed. Don't reprint the whole post — just the key edits and why.
+
+Then commit the edits:
+```bash
+git add posts/<slug>.md
+git commit -m "edit: <title> — <one line summarising what changed>"
+```
 
 Ask: "Happy with this? Want anything changed back or pushed further?"
 
@@ -91,3 +97,4 @@ Ask: "Happy with this? Want anything changed back or pushed further?"
 - Don't add subheadings unless the piece is genuinely long (1500+ words)
 - Don't add a summary paragraph ("In this post I will...")
 - Don't remove emotional stakes — the conflict, difficulty, and stakes are what make it worth reading
+- Don't use em dashes

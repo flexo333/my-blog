@@ -488,6 +488,15 @@ order: 1
 One sentence description.
 ```
 
+**After adding any initial content**, commit and push so it's saved and deploys:
+```bash
+git add public/avatar.jpg ideas/ projects/ posts/
+git commit -m "content: add initial avatar, ideas, and projects"
+git push
+```
+
+Only run this if at least one piece of content was added — skip if the user deferred everything.
+
 ---
 
 ## Step 12 — Verify CI is deploying
