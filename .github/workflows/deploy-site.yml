@@ -21,7 +21,6 @@ jobs:
   deploy:
     name: Build & Deploy
     runs-on: ubuntu-latest
-    if: ${{ secrets.PULUMI_ACCESS_TOKEN != '' }}
 
     steps:
       - uses: actions/checkout@v4
