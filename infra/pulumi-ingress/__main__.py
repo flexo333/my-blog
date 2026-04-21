@@ -106,6 +106,10 @@ infra_role = aws.iam.Role(
     })),
 )
 
+# Shared CI role for <github_owner>/* repos that deploy Lambda-backed static
+# sites (yt2txt, future reeds-style apps). Resource ARNs are bounded to
+# bucket_prefix* and known per-app prefixes so a compromised CI in one repo
+# can't touch unrelated infra.
 aws.iam.RolePolicy(
     "static-site-infra-policy",
     role=infra_role.id,
@@ -149,6 +153,118 @@ aws.iam.RolePolicy(
                 "Effect": "Allow",
                 "Action": "route53:ListHostedZones",
                 "Resource": "*",
+            },
+            {
+                "Sid": "Lambda",
+                "Effect": "Allow",
+                "Action": "lambda:*",
+                "Resource": [
+                    f"arn:aws:lambda:*:{account_id}:function:{bucket_prefix}*",
+                    f"arn:aws:lambda:*:{account_id}:function:yt2txt-*",
+                    f"arn:aws:lambda:*:{account_id}:function:summarise-*",
+                ],
+            },
+            {
+                "Sid": "LambdaLayersList",
+                "Effect": "Allow",
+                "Action": [
+                    "lambda:GetLayerVersion",
+                    "lambda:ListLayers",
+                    "lambda:ListLayerVersions",
+                ],
+                "Resource": "*",
+            },
+            {
+                "Sid": "DynamoDB",
+                "Effect": "Allow",
+                "Action": "dynamodb:*",
+                "Resource": [
+                    f"arn:aws:dynamodb:*:{account_id}:table/{bucket_prefix}*",
+                    f"arn:aws:dynamodb:*:{account_id}:table/{bucket_prefix}*/index/*",
+                    f"arn:aws:dynamodb:*:{account_id}:table/yt2txt-*",
+                    f"arn:aws:dynamodb:*:{account_id}:table/yt2txt-*/index/*",
+                ],
+            },
+            {
+                "Sid": "IAMManageServiceRoles",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateRole",
+                    "iam:GetRole",
+                    "iam:UpdateRole",
+                    "iam:DeleteRole",
+                    "iam:TagRole",
+                    "iam:UntagRole",
+                    "iam:ListRoleTags",
+                    "iam:PutRolePolicy",
+                    "iam:GetRolePolicy",
+                    "iam:DeleteRolePolicy",
+                    "iam:ListRolePolicies",
+                ],
+                "Resource": [
+                    f"arn:aws:iam::{account_id}:role/{bucket_prefix}*",
+                    f"arn:aws:iam::{account_id}:role/yt2txt-*",
+                    f"arn:aws:iam::{account_id}:role/summarise-*",
+                ],
+            },
+            {
+                "Sid": "IAMManagedPolicyAttach",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:AttachRolePolicy",
+                    "iam:DetachRolePolicy",
+                    "iam:ListAttachedRolePolicies",
+                ],
+                "Resource": [
+                    f"arn:aws:iam::{account_id}:role/{bucket_prefix}*",
+                    f"arn:aws:iam::{account_id}:role/yt2txt-*",
+                    f"arn:aws:iam::{account_id}:role/summarise-*",
+                ],
+                "Condition": {
+                    "ArnEquals": {
+                        "iam:PolicyARN": [
+                            "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                        ],
+                    },
+                },
+            },
+            {
+                "Sid": "IAMPassRole",
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": [
+                    f"arn:aws:iam::{account_id}:role/{bucket_prefix}*",
+                    f"arn:aws:iam::{account_id}:role/yt2txt-*",
+                    f"arn:aws:iam::{account_id}:role/summarise-*",
+                ],
+                "Condition": {
+                    "StringEquals": {
+                        "iam:PassedToService": "lambda.amazonaws.com",
+                    },
+                },
+            },
+            {
+                "Sid": "EventBridge",
+                "Effect": "Allow",
+                "Action": "events:*",
+                "Resource": [
+                    f"arn:aws:events:*:{account_id}:rule/{bucket_prefix}*",
+                    f"arn:aws:events:*:{account_id}:rule/yt2txt-*",
+                ],
+            },
+            {
+                "Sid": "CloudWatchLogs",
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:DeleteLogGroup",
+                    "logs:DescribeLogGroups",
+                    "logs:PutRetentionPolicy",
+                    "logs:TagResource",
+                    "logs:UntagResource",
+                    "logs:ListTagsForResource",
+                ],
+                "Resource": f"arn:aws:logs:*:{account_id}:log-group:/aws/lambda/*",
             },
         ],
     }),
