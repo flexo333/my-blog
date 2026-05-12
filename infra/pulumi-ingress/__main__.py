@@ -79,6 +79,45 @@ aws.iam.RolePolicy(
                 "Action": ["cloudfront:CreateInvalidation"],
                 "Resource": f"arn:aws:cloudfront::{account_id}:distribution/*",
             },
+            {
+                "Sid": "EcrAuthForDeploy",
+                # Container-image deploys need a registry token, which AWS
+                # only issues with Resource: "*". Pull/push are still
+                # restricted to bucket_prefix* repos via EcrPushPull below.
+                "Effect": "Allow",
+                "Action": ["ecr:GetAuthorizationToken"],
+                "Resource": "*",
+            },
+            {
+                "Sid": "EcrPushPull",
+                "Effect": "Allow",
+                "Action": [
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:BatchGetImage",
+                    "ecr:CompleteLayerUpload",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:InitiateLayerUpload",
+                    "ecr:PutImage",
+                    "ecr:UploadLayerPart",
+                    "ecr:DescribeRepositories",
+                    "ecr:DescribeImages",
+                    "ecr:ListImages",
+                ],
+                "Resource": [f"arn:aws:ecr:*:{account_id}:repository/{bucket_prefix}*"],
+            },
+            {
+                "Sid": "LambdaUpdateImageForDeploy",
+                # Lets the deploy role roll a Lambda's image URI to a new
+                # SHA without touching configuration. Scoped to the same
+                # prefix as the IAM role definitions below.
+                "Effect": "Allow",
+                "Action": [
+                    "lambda:UpdateFunctionCode",
+                    "lambda:GetFunction",
+                    "lambda:PublishVersion",
+                ],
+                "Resource": [f"arn:aws:lambda:*:{account_id}:function:{bucket_prefix}*"],
+            },
         ],
     }),
 )
@@ -265,6 +304,63 @@ aws.iam.RolePolicy(
                     "logs:ListTagsForResource",
                 ],
                 "Resource": f"arn:aws:logs:*:{account_id}:log-group:/aws/lambda/*",
+            },
+            {
+                "Sid": "EcrAuth",
+                # ECR token requests are not resource-scopable.
+                "Effect": "Allow",
+                "Action": ["ecr:GetAuthorizationToken"],
+                "Resource": "*",
+            },
+            {
+                "Sid": "EcrRepoLifecycle",
+                "Effect": "Allow",
+                "Action": "ecr:*",
+                "Resource": [f"arn:aws:ecr:*:{account_id}:repository/{bucket_prefix}*"],
+            },
+            {
+                "Sid": "SsmParameters",
+                # App-config + secrets stored as SecureString parameters under
+                # /<prefix>/* (e.g. /flexo333/garmin/jwt_secret).
+                "Effect": "Allow",
+                "Action": [
+                    "ssm:GetParameter",
+                    "ssm:GetParameters",
+                    "ssm:GetParametersByPath",
+                    "ssm:PutParameter",
+                    "ssm:DeleteParameter",
+                    "ssm:AddTagsToResource",
+                    "ssm:RemoveTagsFromResource",
+                    "ssm:ListTagsForResource",
+                    "ssm:DescribeParameters",
+                ],
+                "Resource": [
+                    f"arn:aws:ssm:*:{account_id}:parameter/{bucket_prefix.rstrip('-')}/*",
+                ],
+            },
+            {
+                "Sid": "SsmDescribeAll",
+                # DescribeParameters cannot be resource-scoped.
+                "Effect": "Allow",
+                "Action": ["ssm:DescribeParameters"],
+                "Resource": "*",
+            },
+            {
+                "Sid": "SecretsManager",
+                "Effect": "Allow",
+                "Action": [
+                    "secretsmanager:CreateSecret",
+                    "secretsmanager:DeleteSecret",
+                    "secretsmanager:DescribeSecret",
+                    "secretsmanager:GetSecretValue",
+                    "secretsmanager:PutSecretValue",
+                    "secretsmanager:UpdateSecret",
+                    "secretsmanager:TagResource",
+                    "secretsmanager:UntagResource",
+                ],
+                "Resource": [
+                    f"arn:aws:secretsmanager:*:{account_id}:secret:{bucket_prefix}*",
+                ],
             },
         ],
     }),
