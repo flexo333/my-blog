@@ -21,3 +21,7 @@ node_modules/
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
