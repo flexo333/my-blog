@@ -259,8 +259,12 @@ aws.iam.RolePolicy(
                     f"arn:aws:iam::{account_id}:role/yt2txt-*",
                     f"arn:aws:iam::{account_id}:role/summarise-*",
                 ],
+                # ArnEqualsIfExists (not ArnEquals) — `iam:PolicyARN` is
+                # only supplied for Attach/DetachRolePolicy. With plain
+                # ArnEquals, ListAttachedRolePolicies (no input ARN) is
+                # always denied, breaking Pulumi's refresh of any role.
                 "Condition": {
-                    "ArnEquals": {
+                    "ArnEqualsIfExists": {
                         "iam:PolicyARN": [
                             "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
                         ],
