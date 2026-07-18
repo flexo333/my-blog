@@ -8,9 +8,11 @@ Shared roles let any <github_owner>/* repo deploy static sites without
 touching this stack. Adding a new site = create a repo, copy one secret, done.
 
 Config (in Pulumi.prod.yaml):
-  domainName    — your root domain, e.g. will.dev
-  githubOwner   — your GitHub username or org
-  bucketPrefix  — prefix for all S3 bucket names, e.g. "will-"
+  domainName       — your root domain, e.g. will.dev
+  githubOwner      — your GitHub username or org
+  bucketPrefix     — prefix for all S3 bucket names, e.g. "will-"
+  homelabSubdomain — subdomain the home-lab serves under (default "home").
+                     Only used to scope the ACME DNS-01 credential below.
 """
 
 import json
@@ -19,9 +21,10 @@ import pulumi_aws as aws
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 config = pulumi.Config()
-domain_name   = config.require("domainName")
-github_owner  = config.require("githubOwner")
-bucket_prefix = config.get("bucketPrefix") or f"{github_owner}-"
+domain_name       = config.require("domainName")
+github_owner      = config.require("githubOwner")
+bucket_prefix     = config.get("bucketPrefix") or f"{github_owner}-"
+homelab_subdomain = config.get("homelabSubdomain") or "home"
 
 # ── Route 53 hosted zone ───────────────────────────────────────────────────────
 zone = aws.route53.Zone("zone", name=domain_name)
@@ -370,9 +373,77 @@ aws.iam.RolePolicy(
     }),
 )
 
+# ── Home-lab ingress — scoped key for nginx-proxy-manager's ACME DNS-01 ──────
+# The homecore box (/srv) runs nginx-proxy-manager, which issues a real
+# Let's Encrypt wildcard cert for *.home.willbright.link via
+# certbot-dns-route53 and auto-renews it. ACM/CloudFront can't serve LAN-only
+# services, so it's a genuine LE cert — but the DNS-01 challenge writes
+# _acme-challenge TXT records into THIS zone, so NPM needs long-lived AWS
+# credentials. Managed here so the key is IaC, least-privilege and rotatable.
+#
+# The write grant is narrowed three ways — hosted zone (Resource), record type
+# (TXT) and exact record name — so a leak of this key cannot repoint the apex,
+# MX, or any other record in willbright.link.
+#
+# Both names on the cert (*.home.willbright.link AND home.willbright.link)
+# validate at the SAME record, _acme-challenge.home.willbright.link, because
+# ACME strips the wildcard label before prefixing. So one allowed name covers
+# the whole cert — and renewals, which reuse that same name.
+homelab_domain      = f"{homelab_subdomain}.{domain_name}"
+acme_challenge_name = f"_acme-challenge.{homelab_domain}"
+
+npm_dns01_user = aws.iam.User("npm-route53-dns01", name="npm-route53-dns01")
+
+aws.iam.UserPolicy(
+    "npm-route53-dns01-policy",
+    user=npm_dns01_user.name,
+    policy=zone.arn.apply(lambda zone_arn: json.dumps({
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                # ListHostedZones/GetChange are not resource-scopable.
+                "Sid": "ListAndPollChanges",
+                "Effect": "Allow",
+                "Action": ["route53:ListHostedZones", "route53:GetChange"],
+                "Resource": "*",
+            },
+            {
+                "Sid": "AcmeChallengeTxtRecordOnly",
+                "Effect": "Allow",
+                "Action": "route53:ChangeResourceRecordSets",
+                "Resource": zone_arn,
+                # ForAllValues is required, not stylistic: these are
+                # multi-valued keys (one API call can carry several changes)
+                # and ForAllValues demands EVERY value match. A plain
+                # StringEquals would pass the whole call if any one matched.
+                #
+                # Not restricting ...Actions: CREATE/UPSERT/DELETE is the
+                # complete set of valid actions, so allow-listing all three
+                # would grant exactly what omitting it grants.
+                "Condition": {
+                    "ForAllValues:StringEquals": {
+                        "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+                            acme_challenge_name,
+                        ],
+                        "route53:ChangeResourceRecordSetsRecordTypes": ["TXT"],
+                    },
+                },
+            },
+        ],
+    })),
+)
+
+npm_dns01_key = aws.iam.AccessKey("npm-route53-dns01-key", user=npm_dns01_user.name)
+
 # ── Outputs ────────────────────────────────────────────────────────────────────
 pulumi.export("nameservers",    zone.name_servers)
 pulumi.export("zone_id",        zone.zone_id)
 pulumi.export("deploy_role_arn", deploy_role.arn)
 pulumi.export("infra_role_arn", infra_role.arn)
 pulumi.export("aws_region",     pulumi.Config("aws").require("region"))
+# Feed these into the homecore box's _ingress/route53-credentials.ini:
+#   make infra-ingress-outputs                       # key id (plaintext)
+#   docker compose run --rm pulumi-ingress \
+#     stack output npm_dns01_secret_access_key --show-secrets
+pulumi.export("npm_dns01_access_key_id",     npm_dns01_key.id)
+pulumi.export("npm_dns01_secret_access_key", npm_dns01_key.secret)  # secret output

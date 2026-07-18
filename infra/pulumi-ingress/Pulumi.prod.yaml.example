@@ -5,3 +5,6 @@ config:
   GITHUB_OWNER-ingress:domainName: yourdomain.com
   GITHUB_OWNER-ingress:githubOwner: yourgithubusername
   GITHUB_OWNER-ingress:bucketPrefix: yourgithubusername-
+  # Optional (default "home"). Subdomain the home-lab serves under; scopes the
+  # ACME DNS-01 credential to _acme-challenge.<homelabSubdomain>.<domainName>.
+  # GITHUB_OWNER-ingress:homelabSubdomain: home
