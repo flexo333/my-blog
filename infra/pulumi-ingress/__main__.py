@@ -370,9 +370,50 @@ aws.iam.RolePolicy(
     }),
 )
 
+# ── Home-lab ingress — scoped key for nginx-proxy-manager's ACME DNS-01 ──────
+# The homecore box (/srv) runs nginx-proxy-manager, which issues a real
+# Let's Encrypt wildcard cert for *.home.willbright.link via
+# certbot-dns-route53 and auto-renews it. ACM/CloudFront can't serve LAN-only
+# services, so it's a genuine LE cert — but the DNS-01 challenge writes
+# _acme-challenge TXT records into THIS zone, so NPM needs long-lived AWS
+# credentials scoped to exactly that: edit records in the willbright.link zone,
+# nothing else. Managed here so the key is IaC, least-privilege, and rotatable.
+npm_dns01_user = aws.iam.User("npm-route53-dns01", name="npm-route53-dns01")
+
+aws.iam.UserPolicy(
+    "npm-route53-dns01-policy",
+    user=npm_dns01_user.name,
+    policy=zone.arn.apply(lambda zone_arn: json.dumps({
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                # ListHostedZones/GetChange are not resource-scopable.
+                "Sid": "ListAndPollChanges",
+                "Effect": "Allow",
+                "Action": ["route53:ListHostedZones", "route53:GetChange"],
+                "Resource": "*",
+            },
+            {
+                "Sid": "EditWillbrightRecordsOnly",
+                "Effect": "Allow",
+                "Action": "route53:ChangeResourceRecordSets",
+                "Resource": zone_arn,
+            },
+        ],
+    })),
+)
+
+npm_dns01_key = aws.iam.AccessKey("npm-route53-dns01-key", user=npm_dns01_user.name)
+
 # ── Outputs ────────────────────────────────────────────────────────────────────
 pulumi.export("nameservers",    zone.name_servers)
 pulumi.export("zone_id",        zone.zone_id)
 pulumi.export("deploy_role_arn", deploy_role.arn)
 pulumi.export("infra_role_arn", infra_role.arn)
 pulumi.export("aws_region",     pulumi.Config("aws").require("region"))
+# Feed these into the homecore box's _ingress/route53-credentials.ini:
+#   make infra-ingress-outputs                       # key id (plaintext)
+#   docker compose run --rm pulumi-ingress \
+#     stack output npm_dns01_secret_access_key --show-secrets
+pulumi.export("npm_dns01_access_key_id",     npm_dns01_key.id)
+pulumi.export("npm_dns01_secret_access_key", npm_dns01_key.secret)  # secret output
