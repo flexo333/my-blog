@@ -8,9 +8,11 @@ Shared roles let any <github_owner>/* repo deploy static sites without
 touching this stack. Adding a new site = create a repo, copy one secret, done.
 
 Config (in Pulumi.prod.yaml):
-  domainName    — your root domain, e.g. will.dev
-  githubOwner   — your GitHub username or org
-  bucketPrefix  — prefix for all S3 bucket names, e.g. "will-"
+  domainName       — your root domain, e.g. will.dev
+  githubOwner      — your GitHub username or org
+  bucketPrefix     — prefix for all S3 bucket names, e.g. "will-"
+  homelabSubdomain — subdomain the home-lab serves under (default "home").
+                     Only used to scope the ACME DNS-01 credential below.
 """
 
 import json
@@ -19,9 +21,10 @@ import pulumi_aws as aws
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 config = pulumi.Config()
-domain_name   = config.require("domainName")
-github_owner  = config.require("githubOwner")
-bucket_prefix = config.get("bucketPrefix") or f"{github_owner}-"
+domain_name       = config.require("domainName")
+github_owner      = config.require("githubOwner")
+bucket_prefix     = config.get("bucketPrefix") or f"{github_owner}-"
+homelab_subdomain = config.get("homelabSubdomain") or "home"
 
 # ── Route 53 hosted zone ───────────────────────────────────────────────────────
 zone = aws.route53.Zone("zone", name=domain_name)
@@ -376,8 +379,19 @@ aws.iam.RolePolicy(
 # certbot-dns-route53 and auto-renews it. ACM/CloudFront can't serve LAN-only
 # services, so it's a genuine LE cert — but the DNS-01 challenge writes
 # _acme-challenge TXT records into THIS zone, so NPM needs long-lived AWS
-# credentials scoped to exactly that: edit records in the willbright.link zone,
-# nothing else. Managed here so the key is IaC, least-privilege, and rotatable.
+# credentials. Managed here so the key is IaC, least-privilege and rotatable.
+#
+# The write grant is narrowed three ways — hosted zone (Resource), record type
+# (TXT) and exact record name — so a leak of this key cannot repoint the apex,
+# MX, or any other record in willbright.link.
+#
+# Both names on the cert (*.home.willbright.link AND home.willbright.link)
+# validate at the SAME record, _acme-challenge.home.willbright.link, because
+# ACME strips the wildcard label before prefixing. So one allowed name covers
+# the whole cert — and renewals, which reuse that same name.
+homelab_domain      = f"{homelab_subdomain}.{domain_name}"
+acme_challenge_name = f"_acme-challenge.{homelab_domain}"
+
 npm_dns01_user = aws.iam.User("npm-route53-dns01", name="npm-route53-dns01")
 
 aws.iam.UserPolicy(
@@ -394,10 +408,26 @@ aws.iam.UserPolicy(
                 "Resource": "*",
             },
             {
-                "Sid": "EditWillbrightRecordsOnly",
+                "Sid": "AcmeChallengeTxtRecordOnly",
                 "Effect": "Allow",
                 "Action": "route53:ChangeResourceRecordSets",
                 "Resource": zone_arn,
+                # ForAllValues is required, not stylistic: these are
+                # multi-valued keys (one API call can carry several changes)
+                # and ForAllValues demands EVERY value match. A plain
+                # StringEquals would pass the whole call if any one matched.
+                #
+                # Not restricting ...Actions: CREATE/UPSERT/DELETE is the
+                # complete set of valid actions, so allow-listing all three
+                # would grant exactly what omitting it grants.
+                "Condition": {
+                    "ForAllValues:StringEquals": {
+                        "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+                            acme_challenge_name,
+                        ],
+                        "route53:ChangeResourceRecordSetsRecordTypes": ["TXT"],
+                    },
+                },
             },
         ],
     })),
