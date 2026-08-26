@@ -10,6 +10,8 @@ touching this stack. Adding a new site = create a repo, copy one secret, done.
 Config (in Pulumi.prod.yaml):
   domainName       — your root domain, e.g. will.dev
   githubOwner      — your GitHub username or org
+  githubOwnerId    — that account's numeric GitHub ID (see the note by
+                     `github_subs` below)
   bucketPrefix     — prefix for all S3 bucket names, e.g. "will-"
   homelabSubdomain — subdomain the home-lab serves under (default "home").
                      Only used to scope the ACME DNS-01 credential below.
@@ -23,8 +25,26 @@ import pulumi_aws as aws
 config = pulumi.Config()
 domain_name       = config.require("domainName")
 github_owner      = config.require("githubOwner")
+github_owner_id   = config.require("githubOwnerId")
 bucket_prefix     = config.get("bucketPrefix") or f"{github_owner}-"
 homelab_subdomain = config.get("homelabSubdomain") or "home"
+
+# GitHub stamps one of two `sub` formats into an Actions OIDC token:
+#
+#   legacy     repo:flexo333/juda:ref:refs/heads/main
+#   immutable  repo:flexo333@3823393/juda@1342342663:ref:refs/heads/main
+#
+# Every repo created after 2026-07-15 gets the immutable form, which embeds the
+# owner and repo IDs; older repos keep the legacy form unless they opt in. Both
+# must be trusted while that mix persists — a policy matching only
+# `repo:{owner}/*` rejects every newly created repo with
+# "Not authorized to perform sts:AssumeRoleWithWebIdentity".
+def github_subs(suffix: str = "") -> list[str]:
+    return [
+        f"repo:{github_owner}/*{suffix}",
+        f"repo:{github_owner}@{github_owner_id}/*{suffix}",
+    ]
+
 
 # ── Route 53 hosted zone ───────────────────────────────────────────────────────
 zone = aws.route53.Zone("zone", name=domain_name)
@@ -57,7 +77,7 @@ deploy_role = aws.iam.Role(
                 },
                 "StringLike": {
                     "token.actions.githubusercontent.com:sub":
-                        f"repo:{github_owner}/*:ref:refs/heads/main",
+                        github_subs(":ref:refs/heads/main"),
                 },
             },
         }],
@@ -140,8 +160,7 @@ infra_role = aws.iam.Role(
                     "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
                 },
                 "StringLike": {
-                    "token.actions.githubusercontent.com:sub":
-                        f"repo:{github_owner}/*",
+                    "token.actions.githubusercontent.com:sub": github_subs(),
                 },
             },
         }],

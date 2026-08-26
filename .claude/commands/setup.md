@@ -276,7 +276,15 @@ config:
   aws:region: <AWS_REGION>
   lukerohde-ingress:domainName: <DOMAIN>
   lukerohde-ingress:githubOwner: <GITHUB_OWNER>
+  lukerohde-ingress:githubOwnerId: "<GITHUB_OWNER_ID>"
   lukerohde-ingress:bucketPrefix: <BUCKET_PREFIX>
+```
+
+`<GITHUB_OWNER_ID>` is the account's numeric GitHub ID — GitHub embeds it in the
+Actions OIDC subject claim for repos created after 2026-07-15, so the CI trust
+policies need it. Get it with:
+```bash
+curl -s https://api.github.com/users/<GITHUB_OWNER> | jq .id
 ```
 
 **Update infra/pulumi-ingress/Pulumi.yaml** — change the stack name:
