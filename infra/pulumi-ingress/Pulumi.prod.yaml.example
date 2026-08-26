@@ -4,6 +4,8 @@ config:
   aws:region: us-east-1
   GITHUB_OWNER-ingress:domainName: yourdomain.com
   GITHUB_OWNER-ingress:githubOwner: yourgithubusername
+  # Numeric GitHub account ID: curl -s https://api.github.com/users/<owner> | jq .id
+  GITHUB_OWNER-ingress:githubOwnerId: "123456"
   GITHUB_OWNER-ingress:bucketPrefix: yourgithubusername-
   # Optional (default "home"). Subdomain the home-lab serves under; scopes the
   # ACME DNS-01 credential to _acme-challenge.<homelabSubdomain>.<domainName>.
