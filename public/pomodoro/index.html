@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A pomodoro timer with a forest scene." />
+    <title>Pomodoro</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="./pomodoro.css" />
+  </head>
+  <body>
+    <a href="/" class="back-link">← willbright.link</a>
+
+    <main class="stage" data-state="idle">
+      <input
+        id="priority"
+        class="priority"
+        type="text"
+        placeholder="What are you focused on?"
+        autocomplete="off"
+        spellcheck="false"
+        maxlength="120"
+      />
+
+      <div id="timer" class="timer">25:00</div>
+
+      <div id="controls" class="controls">
+        <button id="btn-start" class="btn btn-primary" type="button" disabled>Start focus</button>
+        <button id="btn-pause" class="btn" type="button" hidden>Pause</button>
+        <button id="btn-resume" class="btn btn-primary" type="button" hidden>Resume</button>
+        <button id="btn-cancel" class="btn btn-ghost" type="button" hidden>Cancel</button>
+        <button id="btn-start-break" class="btn btn-primary" type="button" hidden>Start break</button>
+        <button id="btn-start-next" class="btn btn-primary" type="button" hidden>Start next focus</button>
+      </div>
+
+      <svg
+        id="scene"
+        class="scene"
+        viewBox="0 0 1200 400"
+        preserveAspectRatio="xMidYMax slice"
+        aria-hidden="true"
+      >
+        <defs>
+          <symbol id="tree" viewBox="0 0 60 100">
+            <rect x="26" y="62" width="8" height="32" fill="#5a4a3a" />
+            <polygon points="30,4 8,52 52,52" fill="#4a7c5f" />
+            <polygon points="30,22 12,62 48,62" fill="#5a8c6f" />
+            <polygon points="30,40 16,72 44,72" fill="#6a9c7f" />
+          </symbol>
+        </defs>
+
+        <rect id="sky" class="sky" x="0" y="0" width="1200" height="280" />
+        <path class="hill hill-back" d="M0,260 Q300,200 600,240 T1200,220 L1200,400 L0,400 Z" />
+        <path class="hill hill-mid" d="M0,300 Q200,250 500,290 T1200,270 L1200,400 L0,400 Z" />
+        <rect class="meadow" x="0" y="320" width="1200" height="80" />
+        <g id="trees"></g>
+      </svg>
+    </main>
+
+    <script src="./pomodoro.js"></script>
+  </body>
+</html>
