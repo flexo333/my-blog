@@ -25,3 +25,4 @@ node_modules/
 # Python bytecode cache
 __pycache__/
 *.pyc
+npm_dns01_access_key_id

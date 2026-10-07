@@ -99,6 +99,12 @@ infra-destroy: ## Destroy site infra ⚠️  careful
 infra-outputs: ## Show site stack outputs (bucket name, CF distribution ID)
 	docker compose run --rm pulumi stack output
 
+.PHONY: infra-refresh
+infra-refresh: ## Resync Pulumi state from AWS (fixes drift)
+	echo "→ Refreshing Pulumi state from AWS..."; \
+	docker compose run --rm pulumi refresh $(PULUMI_YES); \
+	echo "→ Pulumi state refreshed"
+
 # ── Deploy ────────────────────────────────────────────────────────────────────
 .PHONY: deploy
 deploy: build ## Build + sync to S3 + invalidate CloudFront
